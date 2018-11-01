@@ -82,7 +82,7 @@ def load_files (args):
         for line in csvfile:
             
             # Prende solo i geni i file che iniziano con 'T'
-            # perché significa che sono singol gene expansion
+            # perché significa che sono single gene expansion
             if line[2].startswith("T"):
 
                 # Prende il codice dell'isoforma
