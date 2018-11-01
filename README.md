@@ -1,2 +1,2 @@
 # Gene mapper to NESSRA
-Questo progetto fa cose
+Questo progetto fa belle cose, NESSRA è molto potente
