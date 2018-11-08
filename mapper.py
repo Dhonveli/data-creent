@@ -38,7 +38,6 @@ map_gene_to_anno = {}
 map_code_to_anno = {}
 map_code_to_args = {}
 header_runned = []
-numbgenes = 0
 
 
 def load_files(args):
@@ -131,42 +130,43 @@ def process_lgn(gene_list):
         with open(output_folder + '/summary_lgn.csv', "w") as lgnsummary:
             lgncsvsummary = csv.writer(lgnsummary, quotechar='"', delimiter=',',
                                        quoting=csv.QUOTE_ALL)
-            lgncsvsummary.writerow(["ID", "GENE", "SCORE", "STATUS"])
+            lgncsvsummary.writerow(["ID", "GENE", "SCORE", "STATUS","PRIORITY"])
             with open('output_folder/already-runned.csv', 'w') as lgnfilerunned:
                 lgncsvrunned = csv.writer(lgnfilerunned, quotechar='"', delimiter=',',
                                           quoting=csv.QUOTE_ALL)
                 lgncsvrunned.writerow(header_runned)
-                while numbgenes > 1:
-                    for gene in list_gene:
-                        if gene not in map_gene_to_anno:
-                            lgncsvsummary.writerow(
-                                [None, gene, "lgn", "not annotated"])
-                        else:
-                            for isoform in map_gene_to_anno[gene]:
+                for gene in list_gene:
+                    if numbgenes <= 0:
+                        break
+                    if gene not in map_gene_to_anno:
+                        lgncsvsummary.writerow(
+                            [None, gene, "lgn", "not annotated",""])
+                    else:
+                        for isoform in map_gene_to_anno[gene]:
 
-                                code = isoform[0]
+                            code = isoform[0]
 
-                                # scrive questo codice nella lgn
-                                filelgn.write('\n' + code + ',' + code)
+                            # scrive questo codice nella lgn
+                            filelgn.write('\n' + code + ',' + code)
 
-                                # Decide il nome dei file onegene
-                                filename = code + '-' + gene + '.txt'
+                            # Decide il nome dei file onegene
+                            filename = code + '-' + gene + '.txt'
 
-                                # controlla se è già stato runnato
-                                if code in map_code_to_args:
-                                    for row in map_code_to_args[code]:
-                                        lgncsvrunned.writerow(row)
-                                        lgncsvsummary.writerow(
-                                            [code, gene, "lgn", "already run"])
-
-                                # Altrimenti scrive il file da mandare a walter
-                                else:
-                                    numbgenes -= 1
+                            # controlla se è già stato runnato
+                            if code in map_code_to_args:
+                                for row in map_code_to_args[code]:
+                                    lgncsvrunned.writerow(row)
                                     lgncsvsummary.writerow(
-                                        [code, gene, "lgn", "to be run"])
-                                    with open(output_folder + '/' + filename, 'w') as file:
-                                        file.write('from,to\n' +
-                                                   code + ',' + code)
+                                        [code, gene, "lgn", "already run",""])
+
+                            # Altrimenti scrive il file da mandare a walter
+                            else:
+                                numbgenes -= 1
+                                lgncsvsummary.writerow(
+                                    [code, gene, "lgn", "to be run","HIGH"])
+                                with open(output_folder + '/' + filename, 'w') as file:
+                                    file.write('from,to\n' +
+                                                code + ',' + code)
 
 
 def process_sgn(gene_list):
@@ -195,17 +195,18 @@ def process_sgn(gene_list):
     with open(output_folder + '/summary_sgn.csv', "w") as summaryfile:
         csvsummary = csv.writer(summaryfile, quotechar='"', delimiter=',',
                                 quoting=csv.QUOTE_ALL)
-        csvsummary.writerow(["ID", "GENE", "SCORE", "STATUS"])
+        csvsummary.writerow(["ID", "GENE", "SCORE", "STATUS","PRIORITY"])
         with open(output_folder + '/already-runned-sgn.csv', 'w') as sgnfilerunned:
             sgncsvrunned = csv.writer(sgnfilerunned, quotechar='"', delimiter=',',
                                       quoting=csv.QUOTE_ALL)
             sgncsvrunned.writerow(header_runned)
-
-            while numbgenes > 1:
-                for gene in sorted_gene:
+            for gene in sorted_gene:
+                if numbgenes <= 0:
+                    break
+                else:
                     if gene not in map_gene_to_anno:
                         csvsummary.writerow(
-                            [None, gene, str(gene_rank[gene]), "not annotated"])
+                            [None, gene, str(gene_rank[gene]), "not annotated",""])
                     else:
                         for isoform in map_gene_to_anno[gene]:
 
@@ -219,16 +220,20 @@ def process_sgn(gene_list):
                                 for row in map_code_to_args[code]:
                                     sgncsvrunned.writerow(row)
                                     csvsummary.writerow(
-                                        [code, gene, str(gene_rank[gene]), "already run"])
+                                        [code, gene, str(gene_rank[gene]), "already run",""])
 
                             # Altrimenti scrive il file da mandare a walter
                             else:
                                 numbgenes -= 1
-                                csvsummary.writerow(
-                                    [code, gene, str(gene_rank[gene]), "to be run"])
                                 with open(output_folder + '/' + filename, 'w') as file:
-                                    file.write('from,to\n' +
-                                               code + ',' + code)
+                                        file.write('from,to\n' +
+                                                    code + ',' + code)
+                                if gene_rank[gene] > 0.6:
+                                    csvsummary.writerow(
+                                        [code, gene, str(gene_rank[gene]), "to be run","HIGH"])
+                                else:
+                                    csvsummary.writerow(
+                                        [code, gene, str(gene_rank[gene]), "to be run","LOW"])
 
 
 if __name__ == "__main__":
