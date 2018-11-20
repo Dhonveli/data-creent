@@ -67,7 +67,7 @@ if __name__ == "__main__":
             with open("downloaded.csv","w") as file_down:
                 csvdown = csv.writer(file_down, quotechar='"', delimiter=',',
                                         quoting=csv.QUOTE_ALL)
-                csvdown.writerow("GENE")
+                csvdown.writerow(["GENE"])
                 file_runned.readline()
                 count = 0
                 for line in file_runned:
@@ -77,4 +77,4 @@ if __name__ == "__main__":
                     print(bashcommand)
                     os.system(bashcommand)
                     print("{} Done 👍".format(count))
-                    csvdown.writerow(str(tmp[0]))
+                    csvdown.writerow([tmp[0]])
