@@ -58,7 +58,7 @@ def downl_expansion():
     count = 0
     for expansion in gene_list:
         count = count + 1
-        bashcommand = "rclone copy --drive-shared-with-me remote:experiments_results/" + str(expansion) + "_Hs.expansion remote:"
+        bashcommand = "rclone copy --drive-shared-with-me gDrive:experiments_results/" + str(expansion) + "_Hs.expansion gDrive:"
         print(bashcommand)
         os.system(bashcommand)
         print("{}/{} Done 👍".format(count, len(gene_list)))
@@ -74,5 +74,4 @@ if __name__ == "__main__":
     loader_sgn()
     os.system("python mapper.py -lgn " + args.LocalGeneNetwork)    
     loader_lgn()
-
     downl_expansion()
