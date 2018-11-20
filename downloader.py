@@ -1,6 +1,5 @@
 import os
 import argparse
-import csv
 
 
 def parse_args():
@@ -28,32 +27,6 @@ def parse_args():
     # Parses and returns the object containing the params
     return parser.parse_args()
 
-
-def loader_sgn():
-
-    global gene_list
-
-    with open("./output_folder/already-runned-sgn.csv","r") as file_runned:
-        file_runned.readline()
-    
-        for line in file_runned:
-            el = line.split(",")
-            gene_list[el[0].strip()] = [el[2],el[3:]]
-
-
-def downl_expansion():
-
-    global gene_list
-
-    count = 0
-    for expansion in gene_list:
-        count = count + 1
-        bashcommand = "rclone copy --drive-shared-with-me gDrive:experiments_results/" + str(expansion) + "_Hs.expansion gDrive:"
-        print(bashcommand)
-        os.system(bashcommand)
-        print("{}/{} Done 👍".format(count, len(gene_list)))
-
-
 if __name__ == "__main__":
     
     gene_list = {}
@@ -64,17 +37,18 @@ if __name__ == "__main__":
         print("You have to run mapper2 before!") 
     else:
         with open("./output_folder/already-runned.csv","r") as file_runned:
-            with open("downloaded.csv","w") as file_down:
-                csvdown = csv.writer(file_down, quotechar='"', delimiter=',',
-                                        quoting=csv.QUOTE_ALL)
-                csvdown.writerow(["GENE"])
+            with open("downloaded.csv","r+") as file_down:
                 file_runned.readline()
+                lines = [line.strip() for line in file_down]   
                 count = 0
                 for line in file_runned:
-                    count += 1
                     tmp = line.split(",")
-                    bashcommand = "rclone copy --drive-shared-with-me gDrive:experiments_results/" + str(tmp[0]) + "_Hs.expansion gDrive:"
-                    print(bashcommand)
-                    os.system(bashcommand)
-                    print("{} Done 👍".format(count))
-                    csvdown.writerow([tmp[0]])
+                    if tmp[0] in lines:
+                        continue
+                    else:
+                        count += 1
+                        bashcommand = "rclone copy --drive-shared-with-me gDrive:experiments_results/" + str(tmp[0]) + "_Hs.expansion gDrive:"
+                        print(bashcommand)
+                        os.system(bashcommand)
+                        print("{} Done 👍".format(count))
+                        file_down.write("%s\n" % tmp[0])
