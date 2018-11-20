@@ -1,5 +1,6 @@
 import os
 import argparse
+import csv
 
 
 def parse_args():
@@ -39,17 +40,6 @@ def loader_sgn():
             el = line.split(",")
             gene_list[el[0].strip()] = [el[2],el[3:]]
 
-def loader_lgn():
-
-    global gene_list
-
-    with open("./output_folder/already-runned.csv","r") as file_runned:
-        file_runned.readline()
-    
-        for line in file_runned:
-            el = line.split(",")
-            gene_list[el[0].strip()] = [el[2],el[3:]]
-    
 
 def downl_expansion():
 
@@ -70,8 +60,21 @@ if __name__ == "__main__":
 
     args = parse_args()
 
-    os.system("python mapper.py -sgn " + args.SingleGeneExpansionList)    
-    loader_sgn()
-    os.system("python mapper.py -lgn " + args.LocalGeneNetwork)    
-    loader_lgn()
-    downl_expansion()
+    if not os.path.isfile("./output_folder/already-runned.csv"):
+        print("You have to run mapper2 before!") 
+    else:
+        with open("./output_folder/already-runned.csv","r") as file_runned:
+            with open("downloaded.csv","w") as file_down:
+                csvdown = csv.writer(file_down, quotechar='"', delimiter=',',
+                                        quoting=csv.QUOTE_ALL)
+                csvdown.writerow("GENE")
+                file_runned.readline()
+                count = 0
+                for line in file_runned:
+                    count += 1
+                    tmp = line.split(",")
+                    bashcommand = "rclone copy --drive-shared-with-me gDrive:experiments_results/" + str(tmp[0]) + "_Hs.expansion gDrive:"
+                    print(bashcommand)
+                    os.system(bashcommand)
+                    print("{} Done 👍".format(count))
+                    csvdown.writerow(str(tmp[0]))

@@ -32,22 +32,11 @@ def parse_args():
     # Parses and returns the object containing the params
     return parser.parse_args()
 
-
-# Mappa geni to code
-map_gene_to_anno = {}
-map_code_to_anno = {}
-map_code_to_args = {}
-header_runned = []
-
-
 def load_files(args):
 
     global map_gene_to_anno
     global map_code_to_anno
     global map_code_to_args
-    global header_runned
-    global numbgenes
-    global list_gene
 
     with open(args.annotation) as file:
 
@@ -106,36 +95,24 @@ def load_files(args):
 
                 map_code_to_args[code].append(line)
 
-
 def process_lgn(gene_list):
-
-    global map_gene_to_anno
+    
     global map_code_to_anno
+    global map_gene_to_anno
     global map_code_to_args
-    global header_runned
-    global numbgenes
-    global list_gene
+    global csvsummary
     global csvrunned
-    global lgncsvrunned
-    global lgncsvsummary
-    global output_folder
 
-
-
-    # Carica la lista dei geni
     list_gene = [line.strip() for line in open(gene_list) if line.strip()]
-    print(list_gene)
 
     with open(output_folder + '/hs-' + os.path.basename(gene_list) + '.txt', 'w') as filelgn:
         filelgn.write('from,to')
         # apre il file summary lgn
         # itera sui gene
         for gene in list_gene:
-            if numbgenes <= 0:
-                break
             # guarda se sono annotati
             if gene not in map_gene_to_anno:
-                lgncsvsummary.writerow(
+                csvsummary.writerow(
                     [None, gene, "lgn", "not annotated",""])
             else:
                 for isoform in map_gene_to_anno[gene]:
@@ -149,16 +126,14 @@ def process_lgn(gene_list):
 
                     # controlla se è già stato runnato
                     if code in map_code_to_args:
-                        print(code)
                         for row in map_code_to_args[code]:
-                            lgncsvrunned.writerow(row)
-                            lgncsvsummary.writerow(
+                            csvrunned.writerow(row)
+                            csvsummary.writerow(
                                 [code, gene, "lgn", "already run",""])
 
                     # Altrimenti scrive il file da mandare a walter
                     else:
-                        numbgenes -= 1
-                        lgncsvsummary.writerow(
+                        csvsummary.writerow(
                             [code, gene, "lgn", "to be run","HIGH"])
                         with open(output_folder + '/' + filename, 'w') as file:
                             file.write('from,to\n' +
@@ -166,17 +141,12 @@ def process_lgn(gene_list):
 
 
 def process_sgn(gene_list):
-
-    global map_gene_to_anno
     global map_code_to_anno
+    global map_gene_to_anno
     global map_code_to_args
-    global header_runned
-    global numbgenes
-    global list_gene
+    global csvsummary
     global csvrunned
-    global output_folder
-
-
+    global numbgenes
     gene_list.readline()
     gene_rank = {}
 
@@ -185,49 +155,46 @@ def process_sgn(gene_list):
         gene_rank[tmp[0]] = (float(tmp[3]) + float(tmp[4])) / 2
     sorted_gene = sorted(gene_rank, key=gene_rank.get, reverse=True)
     
-    with open(output_folder + '/summary_sgn.csv', "w") as summaryfile:
-        csvsummary = csv.writer(summaryfile, quotechar='"', delimiter=',',
-                                quoting=csv.QUOTE_ALL)
-        csvsummary.writerow(["ID", "GENE", "SCORE", "STATUS","PRIORITY"])
-        with open(output_folder + '/already-runned-sgn.csv', 'w') as sgnfilerunned:
-            sgncsvrunned = csv.writer(sgnfilerunned, quotechar='"', delimiter=',',
-                                      quoting=csv.QUOTE_ALL)
-            sgncsvrunned.writerow(header_runned)
-            for gene in sorted_gene:
-                if numbgenes <= 0:
-                    break
-                else:
-                    if gene not in map_gene_to_anno:
-                        csvsummary.writerow(
-                            [None, gene, str(gene_rank[gene]), "not annotated",""])
+    for gene in sorted_gene:
+        if numbgenes <= 0:
+            break
+        else:
+            if gene not in map_gene_to_anno:
+                csvsummary.writerow(
+                    [None, gene, str(gene_rank[gene]), "not annotated",""])
+            else:
+                for isoform in map_gene_to_anno[gene]:
+
+                    code = isoform[0]
+
+                    # Decide il nome dei file onegene
+                    filename = code + '-' + gene + '.txt'
+
+                    # controlla se è già stato runnato
+                    if code in map_code_to_args:
+                        for row in map_code_to_args[code]:
+                            csvrunned.writerow(row)
+                            csvsummary.writerow(
+                                [code, gene, str(gene_rank[gene]), "already run",""])
+
+                    # Altrimenti scrive il file da mandare a walter
                     else:
-                        for isoform in map_gene_to_anno[gene]:
+                        numbgenes -= 1
+                        with open(output_folder + '/' + filename, 'w') as file:
+                                file.write('from,to\n' +
+                                            code + ',' + code)
+                        if gene_rank[gene] > 0.6:
+                            csvsummary.writerow(
+                                [code, gene, str(gene_rank[gene]), "to be run","HIGH"])
+                        else:
+                            csvsummary.writerow(
+                                [code, gene, str(gene_rank[gene]), "to be run","LOW"])
+   
 
-                            code = isoform[0]
-
-                            # Decide il nome dei file onegene
-                            filename = code + '-' + gene + '.txt'
-
-                            # controlla se è già stato runnato
-                            if code in map_code_to_args:
-                                for row in map_code_to_args[code]:
-                                    sgncsvrunned.writerow(row)
-                                    csvsummary.writerow(
-                                        [code, gene, str(gene_rank[gene]), "already run",""])
-
-                            # Altrimenti scrive il file da mandare a walter
-                            else:
-                                numbgenes -= 1
-                                with open(output_folder + '/' + filename, 'w') as file:
-                                        file.write('from,to\n' +
-                                                    code + ',' + code)
-                                if gene_rank[gene] > 0.6:
-                                    csvsummary.writerow(
-                                        [code, gene, str(gene_rank[gene]), "to be run","HIGH"])
-                                else:
-                                    csvsummary.writerow(
-                                        [code, gene, str(gene_rank[gene]), "to be run","LOW"])
-
+# Mappa geni to code
+map_gene_to_anno = {}
+map_code_to_anno = {}
+map_code_to_args = {}
 
 if __name__ == "__main__":
 
@@ -241,43 +208,46 @@ if __name__ == "__main__":
     input = False
     if os.path.exists("output_folder"):
         shutil.rmtree("output_folder")
+
     # Normalizza la path
     os.mkdir("output_folder")
 
     # Normalizza la path
     output_folder = os.path.normpath(
         'output_folder')  # removes redundant separator
-        
-    if args.LocalGeneNetwork is not None:
-        input = True
-        args.LocalGeneNetwork = os.path.normpath(args.LocalGeneNetwork[0])
+    
+    # apre summary
+    with open(output_folder + '/summary.csv', "w") as summary:
+        # scrive header
+        csvsummary = csv.writer(summary, quotechar='"', delimiter=',',
+                                    quoting=csv.QUOTE_ALL)
+        csvsummary.writerow(["ID", "GENE", "SCORE", "STATUS","PRIORITY"])
 
-        with open(output_folder + '/summary_lgn.csv', "w") as lgnsummary:
-            # scrive header
-            lgncsvsummary = csv.writer(lgnsummary, quotechar='"', delimiter=',',
+        # apre already_runned
+        with open(output_folder + '/already-runned.csv', 'w') as filerunned:
+            csvrunned = csv.writer(filerunned, quotechar='"', delimiter=',',
                                         quoting=csv.QUOTE_ALL)
-            lgncsvsummary.writerow(["ID", "GENE", "SCORE", "STATUS","PRIORITY"])
-            # apre file already runned e scrive header
-            with open(output_folder + '/already-runned.csv', 'w') as lgnfilerunned:
-                lgncsvrunned = csv.writer(lgnfilerunned, quotechar='"', delimiter=',',
-                                            quoting=csv.QUOTE_ALL)
-                lgncsvrunned.writerow(["ID","ORG","LGN","EXP","LastUpd","alpha","tsize","iter","nPC","nWU"])
+            csvrunned.writerow(["ID","ORG","LGN","EXP","LastUpd","alpha","tsize","iter","nPC","nWU"])
+            
+            if args.LocalGeneNetwork is not None:
+                input = True
+                args.LocalGeneNetwork = os.path.normpath(args.LocalGeneNetwork[0])
 
                 for name in os.listdir(args.LocalGeneNetwork):  # estrae i vari lgn
-                    print(name)
 
                     filename = args.LocalGeneNetwork + '/' + name
 
                     if os.path.isfile(filename):
                         process_lgn(filename)  # processo lgn
 
-    if args.SingleGeneExpansionList is not None:
-        args.SingleGeneExpansionList = os.path.normpath(
-            args.SingleGeneExpansionList[0])
+            if args.SingleGeneExpansionList is not None:
+                input = True
+                args.SingleGeneExpansionList = os.path.normpath(
+                    args.SingleGeneExpansionList[0])
 
-        with open(args.SingleGeneExpansionList, "r") as filesg:
-            if input == False:
-                process_sgn(filesg)
-    else:
-        if input == False:
-            raise Exception("No input was given!")
+                with open(args.SingleGeneExpansionList, "r") as filesg:
+                    process_sgn(filesg)
+            else:
+                if input == False:
+                    raise Exception("No input was given!")
+
